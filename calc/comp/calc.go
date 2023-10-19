@@ -17,7 +17,7 @@ type exprListener struct {
 }
 
 func (l *exprListener) ExitMulDiv(c *parser.MulDivContext) {
-	left, right := l.pop(), l.pop()
+	right, left := l.pop(), l.pop()
 	op := c.GetOp()
 	switch op.GetTokenType() {
 	case parser.ExprLexerMUL:

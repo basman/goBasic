@@ -50,18 +50,18 @@ func (l *exprListener) ExitNumber(c *parser.NumberContext) {
 	l.push(v)
 }
 
-func (s *exprListener) push(v float64) {
+func (l *exprListener) push(v float64) {
 	//fmt.Println("(push", v, ")")
-	s.stack = append(s.stack, v)
+	l.stack = append(l.stack, v)
 }
 
-func (s *exprListener) pop() float64 {
-	if len(s.stack) == 0 {
+func (l *exprListener) pop() float64 {
+	if len(l.stack) == 0 {
 		panic("pop failed, stack is empty")
 	}
 
-	v := s.stack[len(s.stack)-1]
-	s.stack = s.stack[:len(s.stack)-1]
+	v := l.stack[len(l.stack)-1]
+	l.stack = l.stack[:len(l.stack)-1]
 
 	//fmt.Println("(pop", v, ")")
 	return v

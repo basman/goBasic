@@ -3,7 +3,6 @@ package calc
 import (
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 
@@ -43,11 +42,9 @@ func (l *exprListener) ExitAddSub(c *parser.AddSubContext) {
 }
 
 func (l *exprListener) ExitNumber(c *parser.NumberContext) {
-	nStr := c.GetText()
-	nStr = strings.TrimSpace(nStr)
-	v, err := strconv.ParseFloat(nStr, 64)
+	v, err := strconv.ParseFloat(c.GetText(), 64)
 	if err != nil {
-		panic(fmt.Errorf("number conversion of '%v' failed: %v", nStr, err))
+		panic(fmt.Errorf("number conversion of '%v' failed: %v", c.GetText(), err))
 	}
 
 	l.push(v)

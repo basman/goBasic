@@ -2,6 +2,8 @@ package comp
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 
@@ -14,63 +16,45 @@ type exprListener struct {
 	stack []float64
 }
 
-func (l *exprListener) EnterEveryRule(ctx antlr.ParserRuleContext) {
-	//fmt.Println("EnterEveryRule", ctx.GetText())
+func (l *exprListener) ExitMulDiv(c *parser.MulDivContext) {
+	left, right := l.pop(), l.pop()
+	op := c.GetOp()
+	switch op.GetTokenType() {
+	case parser.ExprLexerMUL:
+		l.push(left * right)
+	case parser.ExprLexerDIV:
+		l.push(left / right)
+	default:
+		panic(fmt.Errorf("unexpected MulDiv op token type: %v(%v)", op.GetTokenType(), c.GetParser().GetSymbolicNames()[op.GetTokenType()]))
+	}
 }
 
-func (l *exprListener) ExitEveryRule(ctx antlr.ParserRuleContext) {
-	if ctx.GetStart().GetTokenType() == parser.ExprLexerNUMBER {
-		l.push(v)
-	}
-	fmt.Println("ExitEveryRule", ctx.GetText())
-}
-
-/*
-func evalOp(num1, op, num2 antlr.Token) float64 {
-	n1, err := strconv.ParseFloat(num1.GetText(), 64)
-	if err != nil {
-		panic("number parsing failed (n1)")
-	}
-
-	n2, err := strconv.ParseFloat(num2.GetText(), 64)
-	if err != nil {
-		panic("number parsing failed (n2)")
-	}
-
+func (l *exprListener) ExitAddSub(c *parser.AddSubContext) {
+	right, left := l.pop(), l.pop()
+	op := c.GetOp()
 	switch op.GetTokenType() {
 	case parser.ExprLexerADD:
-		return newNumberToken(n1 + n2)
+		l.push(left + right)
+	case parser.ExprLexerSUB:
+		l.push(left - right)
+	default:
+		panic(fmt.Errorf("unexpected AddSub op token type: %v(%v)", op.GetTokenType(), c.GetParser().GetSymbolicNames()[op.GetTokenType()]))
+	}
+}
+
+func (l *exprListener) ExitNumber(c *parser.NumberContext) {
+	nStr := c.GetText()
+	nStr = strings.TrimSpace(nStr)
+	v, err := strconv.ParseFloat(nStr, 64)
+	if err != nil {
+		panic(fmt.Errorf("number conversion of '%v' failed: %v", nStr, err))
 	}
 
-
+	l.push(v)
 }
-
-func isOp(t antlr.Token) bool {
-	typ := t.GetTokenType()
-	if typ == parser.ExprLexerMUL ||
-		typ == parser.ExprLexerDIV ||
-		typ == parser.ExprLexerADD ||
-		typ == parser.ExprLexerSUB {
-		return true
-	}
-
-	return false
-}
-
-func isNumber(t antlr.Token) bool {
-	return t.GetTokenType() == parser.ExprLexerNUMBER
-}
-
-func isOpen(t antlr.Token) bool {
-	return t.GetTokenType() == parser.ExprLexerPAROPEN
-}
-
-func isClose(t antlr.Token) bool {
-	return t.GetTokenType() == parser.ExprLexerPARCLOSE
-}
-*/
 
 func (s *exprListener) push(v float64) {
+	//fmt.Println("(push", v, ")")
 	s.stack = append(s.stack, v)
 }
 
@@ -82,6 +66,7 @@ func (s *exprListener) pop() float64 {
 	v := s.stack[len(s.stack)-1]
 	s.stack = s.stack[:len(s.stack)-1]
 
+	//fmt.Println("(pop", v, ")")
 	return v
 }
 
@@ -91,6 +76,7 @@ func Eval(input string) (float64, error) {
 
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	p := parser.NewExprParser(stream)
+
 	p.AddErrorListener(antlr.NewDiagnosticErrorListener(true))
 
 	treeListener := &exprListener{}

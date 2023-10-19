@@ -27,8 +27,26 @@ func (s *BaseExprListener) EnterProg(ctx *ProgContext) {}
 // ExitProg is called when production prog is exited.
 func (s *BaseExprListener) ExitProg(ctx *ProgContext) {}
 
-// EnterExpr is called when production expr is entered.
-func (s *BaseExprListener) EnterExpr(ctx *ExprContext) {}
+// EnterNumber is called when production Number is entered.
+func (s *BaseExprListener) EnterNumber(ctx *NumberContext) {}
 
-// ExitExpr is called when production expr is exited.
-func (s *BaseExprListener) ExitExpr(ctx *ExprContext) {}
+// ExitNumber is called when production Number is exited.
+func (s *BaseExprListener) ExitNumber(ctx *NumberContext) {}
+
+// EnterMulDiv is called when production MulDiv is entered.
+func (s *BaseExprListener) EnterMulDiv(ctx *MulDivContext) {}
+
+// ExitMulDiv is called when production MulDiv is exited.
+func (s *BaseExprListener) ExitMulDiv(ctx *MulDivContext) {}
+
+// EnterAddSub is called when production AddSub is entered.
+func (s *BaseExprListener) EnterAddSub(ctx *AddSubContext) {}
+
+// ExitAddSub is called when production AddSub is exited.
+func (s *BaseExprListener) ExitAddSub(ctx *AddSubContext) {}
+
+// EnterParens is called when production Parens is entered.
+func (s *BaseExprListener) EnterParens(ctx *ParensContext) {}
+
+// ExitParens is called when production Parens is exited.
+func (s *BaseExprListener) ExitParens(ctx *ParensContext) {}

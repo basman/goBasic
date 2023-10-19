@@ -231,18 +231,6 @@ type IExprContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
-
-	// Getter signatures
-	NUMBER() antlr.TerminalNode
-	PAROPEN() antlr.TerminalNode
-	AllExpr() []IExprContext
-	Expr(i int) IExprContext
-	PARCLOSE() antlr.TerminalNode
-	MUL() antlr.TerminalNode
-	DIV() antlr.TerminalNode
-	ADD() antlr.TerminalNode
-	SUB() antlr.TerminalNode
-
 	// IsExprContext differentiates from other interfaces.
 	IsExprContext()
 }
@@ -279,15 +267,76 @@ func NewExprContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokin
 
 func (s *ExprContext) GetParser() antlr.Parser { return s.parser }
 
-func (s *ExprContext) NUMBER() antlr.TerminalNode {
+func (s *ExprContext) CopyAll(ctx *ExprContext) {
+	s.CopyFrom(&ctx.BaseParserRuleContext)
+}
+
+func (s *ExprContext) GetRuleContext() antlr.RuleContext {
+	return s
+}
+
+func (s *ExprContext) ToStringTree(ruleNames []string, recog antlr.Recognizer) string {
+	return antlr.TreesStringTree(s, ruleNames, recog)
+}
+
+type NumberContext struct {
+	ExprContext
+}
+
+func NewNumberContext(parser antlr.Parser, ctx antlr.ParserRuleContext) *NumberContext {
+	var p = new(NumberContext)
+
+	InitEmptyExprContext(&p.ExprContext)
+	p.parser = parser
+	p.CopyAll(ctx.(*ExprContext))
+
+	return p
+}
+
+func (s *NumberContext) GetRuleContext() antlr.RuleContext {
+	return s
+}
+
+func (s *NumberContext) NUMBER() antlr.TerminalNode {
 	return s.GetToken(ExprParserNUMBER, 0)
 }
 
-func (s *ExprContext) PAROPEN() antlr.TerminalNode {
-	return s.GetToken(ExprParserPAROPEN, 0)
+func (s *NumberContext) EnterRule(listener antlr.ParseTreeListener) {
+	if listenerT, ok := listener.(ExprListener); ok {
+		listenerT.EnterNumber(s)
+	}
 }
 
-func (s *ExprContext) AllExpr() []IExprContext {
+func (s *NumberContext) ExitRule(listener antlr.ParseTreeListener) {
+	if listenerT, ok := listener.(ExprListener); ok {
+		listenerT.ExitNumber(s)
+	}
+}
+
+type MulDivContext struct {
+	ExprContext
+	op antlr.Token
+}
+
+func NewMulDivContext(parser antlr.Parser, ctx antlr.ParserRuleContext) *MulDivContext {
+	var p = new(MulDivContext)
+
+	InitEmptyExprContext(&p.ExprContext)
+	p.parser = parser
+	p.CopyAll(ctx.(*ExprContext))
+
+	return p
+}
+
+func (s *MulDivContext) GetOp() antlr.Token { return s.op }
+
+func (s *MulDivContext) SetOp(v antlr.Token) { s.op = v }
+
+func (s *MulDivContext) GetRuleContext() antlr.RuleContext {
+	return s
+}
+
+func (s *MulDivContext) AllExpr() []IExprContext {
 	children := s.GetChildren()
 	len := 0
 	for _, ctx := range children {
@@ -308,7 +357,7 @@ func (s *ExprContext) AllExpr() []IExprContext {
 	return tst
 }
 
-func (s *ExprContext) Expr(i int) IExprContext {
+func (s *MulDivContext) Expr(i int) IExprContext {
 	var t antlr.RuleContext
 	j := 0
 	for _, ctx := range s.GetChildren() {
@@ -328,43 +377,161 @@ func (s *ExprContext) Expr(i int) IExprContext {
 	return t.(IExprContext)
 }
 
-func (s *ExprContext) PARCLOSE() antlr.TerminalNode {
-	return s.GetToken(ExprParserPARCLOSE, 0)
-}
-
-func (s *ExprContext) MUL() antlr.TerminalNode {
+func (s *MulDivContext) MUL() antlr.TerminalNode {
 	return s.GetToken(ExprParserMUL, 0)
 }
 
-func (s *ExprContext) DIV() antlr.TerminalNode {
+func (s *MulDivContext) DIV() antlr.TerminalNode {
 	return s.GetToken(ExprParserDIV, 0)
 }
 
-func (s *ExprContext) ADD() antlr.TerminalNode {
-	return s.GetToken(ExprParserADD, 0)
-}
-
-func (s *ExprContext) SUB() antlr.TerminalNode {
-	return s.GetToken(ExprParserSUB, 0)
-}
-
-func (s *ExprContext) GetRuleContext() antlr.RuleContext {
-	return s
-}
-
-func (s *ExprContext) ToStringTree(ruleNames []string, recog antlr.Recognizer) string {
-	return antlr.TreesStringTree(s, ruleNames, recog)
-}
-
-func (s *ExprContext) EnterRule(listener antlr.ParseTreeListener) {
+func (s *MulDivContext) EnterRule(listener antlr.ParseTreeListener) {
 	if listenerT, ok := listener.(ExprListener); ok {
-		listenerT.EnterExpr(s)
+		listenerT.EnterMulDiv(s)
 	}
 }
 
-func (s *ExprContext) ExitRule(listener antlr.ParseTreeListener) {
+func (s *MulDivContext) ExitRule(listener antlr.ParseTreeListener) {
 	if listenerT, ok := listener.(ExprListener); ok {
-		listenerT.ExitExpr(s)
+		listenerT.ExitMulDiv(s)
+	}
+}
+
+type AddSubContext struct {
+	ExprContext
+	op antlr.Token
+}
+
+func NewAddSubContext(parser antlr.Parser, ctx antlr.ParserRuleContext) *AddSubContext {
+	var p = new(AddSubContext)
+
+	InitEmptyExprContext(&p.ExprContext)
+	p.parser = parser
+	p.CopyAll(ctx.(*ExprContext))
+
+	return p
+}
+
+func (s *AddSubContext) GetOp() antlr.Token { return s.op }
+
+func (s *AddSubContext) SetOp(v antlr.Token) { s.op = v }
+
+func (s *AddSubContext) GetRuleContext() antlr.RuleContext {
+	return s
+}
+
+func (s *AddSubContext) AllExpr() []IExprContext {
+	children := s.GetChildren()
+	len := 0
+	for _, ctx := range children {
+		if _, ok := ctx.(IExprContext); ok {
+			len++
+		}
+	}
+
+	tst := make([]IExprContext, len)
+	i := 0
+	for _, ctx := range children {
+		if t, ok := ctx.(IExprContext); ok {
+			tst[i] = t.(IExprContext)
+			i++
+		}
+	}
+
+	return tst
+}
+
+func (s *AddSubContext) Expr(i int) IExprContext {
+	var t antlr.RuleContext
+	j := 0
+	for _, ctx := range s.GetChildren() {
+		if _, ok := ctx.(IExprContext); ok {
+			if j == i {
+				t = ctx.(antlr.RuleContext)
+				break
+			}
+			j++
+		}
+	}
+
+	if t == nil {
+		return nil
+	}
+
+	return t.(IExprContext)
+}
+
+func (s *AddSubContext) ADD() antlr.TerminalNode {
+	return s.GetToken(ExprParserADD, 0)
+}
+
+func (s *AddSubContext) SUB() antlr.TerminalNode {
+	return s.GetToken(ExprParserSUB, 0)
+}
+
+func (s *AddSubContext) EnterRule(listener antlr.ParseTreeListener) {
+	if listenerT, ok := listener.(ExprListener); ok {
+		listenerT.EnterAddSub(s)
+	}
+}
+
+func (s *AddSubContext) ExitRule(listener antlr.ParseTreeListener) {
+	if listenerT, ok := listener.(ExprListener); ok {
+		listenerT.ExitAddSub(s)
+	}
+}
+
+type ParensContext struct {
+	ExprContext
+}
+
+func NewParensContext(parser antlr.Parser, ctx antlr.ParserRuleContext) *ParensContext {
+	var p = new(ParensContext)
+
+	InitEmptyExprContext(&p.ExprContext)
+	p.parser = parser
+	p.CopyAll(ctx.(*ExprContext))
+
+	return p
+}
+
+func (s *ParensContext) GetRuleContext() antlr.RuleContext {
+	return s
+}
+
+func (s *ParensContext) PAROPEN() antlr.TerminalNode {
+	return s.GetToken(ExprParserPAROPEN, 0)
+}
+
+func (s *ParensContext) Expr() IExprContext {
+	var t antlr.RuleContext
+	for _, ctx := range s.GetChildren() {
+		if _, ok := ctx.(IExprContext); ok {
+			t = ctx.(antlr.RuleContext)
+			break
+		}
+	}
+
+	if t == nil {
+		return nil
+	}
+
+	return t.(IExprContext)
+}
+
+func (s *ParensContext) PARCLOSE() antlr.TerminalNode {
+	return s.GetToken(ExprParserPARCLOSE, 0)
+}
+
+func (s *ParensContext) EnterRule(listener antlr.ParseTreeListener) {
+	if listenerT, ok := listener.(ExprListener); ok {
+		listenerT.EnterParens(s)
+	}
+}
+
+func (s *ParensContext) ExitRule(listener antlr.ParseTreeListener) {
+	if listenerT, ok := listener.(ExprListener); ok {
+		listenerT.ExitParens(s)
 	}
 }
 
@@ -394,6 +561,10 @@ func (p *ExprParser) expr(_p int) (localctx IExprContext) {
 
 	switch p.GetTokenStream().LA(1) {
 	case ExprParserNUMBER:
+		localctx = NewNumberContext(p, localctx)
+		p.SetParserRuleContext(localctx)
+		_prevctx = localctx
+
 		{
 			p.SetState(8)
 			p.Match(ExprParserNUMBER)
@@ -404,6 +575,9 @@ func (p *ExprParser) expr(_p int) (localctx IExprContext) {
 		}
 
 	case ExprParserPAROPEN:
+		localctx = NewParensContext(p, localctx)
+		p.SetParserRuleContext(localctx)
+		_prevctx = localctx
 		{
 			p.SetState(9)
 			p.Match(ExprParserPAROPEN)
@@ -453,7 +627,7 @@ func (p *ExprParser) expr(_p int) (localctx IExprContext) {
 
 			switch p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 1, p.GetParserRuleContext()) {
 			case 1:
-				localctx = NewExprContext(p, _parentctx, _parentState)
+				localctx = NewMulDivContext(p, NewExprContext(p, _parentctx, _parentState))
 				p.PushNewRecursionContext(localctx, _startState, ExprParserRULE_expr)
 				p.SetState(15)
 
@@ -463,10 +637,17 @@ func (p *ExprParser) expr(_p int) (localctx IExprContext) {
 				}
 				{
 					p.SetState(16)
+
+					var _lt = p.GetTokenStream().LT(1)
+
+					localctx.(*MulDivContext).op = _lt
+
 					_la = p.GetTokenStream().LA(1)
 
 					if !(_la == ExprParserMUL || _la == ExprParserDIV) {
-						p.GetErrorHandler().RecoverInline(p)
+						var _ri = p.GetErrorHandler().RecoverInline(p)
+
+						localctx.(*MulDivContext).op = _ri
 					} else {
 						p.GetErrorHandler().ReportMatch(p)
 						p.Consume()
@@ -478,7 +659,7 @@ func (p *ExprParser) expr(_p int) (localctx IExprContext) {
 				}
 
 			case 2:
-				localctx = NewExprContext(p, _parentctx, _parentState)
+				localctx = NewAddSubContext(p, NewExprContext(p, _parentctx, _parentState))
 				p.PushNewRecursionContext(localctx, _startState, ExprParserRULE_expr)
 				p.SetState(18)
 
@@ -488,10 +669,17 @@ func (p *ExprParser) expr(_p int) (localctx IExprContext) {
 				}
 				{
 					p.SetState(19)
+
+					var _lt = p.GetTokenStream().LT(1)
+
+					localctx.(*AddSubContext).op = _lt
+
 					_la = p.GetTokenStream().LA(1)
 
 					if !(_la == ExprParserADD || _la == ExprParserSUB) {
-						p.GetErrorHandler().RecoverInline(p)
+						var _ri = p.GetErrorHandler().RecoverInline(p)
+
+						localctx.(*AddSubContext).op = _ri
 					} else {
 						p.GetErrorHandler().ReportMatch(p)
 						p.Consume()

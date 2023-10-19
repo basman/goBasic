@@ -67,17 +67,49 @@ func (l *exprListener) pop() float64 {
 	return v
 }
 
+type CustomSyntaxError struct {
+	line, char int
+	msg        string
+}
+
+func (e CustomSyntaxError) Error() string {
+	return fmt.Sprintf("line %v, char %v: %v", e.line, e.char, e.msg)
+}
+
+type CustomErrorListener struct {
+	*antlr.DefaultErrorListener
+	Errors []error
+}
+
+func (c *CustomErrorListener) SyntaxError(recognizer antlr.Recognizer, offendingSymbol interface{}, line, column int, msg string, e antlr.RecognitionException) {
+	c.Errors = append(c.Errors, &CustomSyntaxError{
+		line: line,
+		char: column + 1,
+		msg:  msg,
+	})
+}
+
 func Eval(input string) (float64, error) {
 	is := antlr.NewInputStream(input)
 	lexer := parser.NewExprLexer(is)
 
+	errListener := &CustomErrorListener{}
+
+	lexer.RemoveErrorListeners()
+	lexer.AddErrorListener(errListener)
+
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	p := parser.NewExprParser(stream)
 
-	p.AddErrorListener(antlr.NewDiagnosticErrorListener(true))
+	p.RemoveErrorListeners()
+	p.AddErrorListener(errListener)
 
 	treeListener := &exprListener{}
 	antlr.ParseTreeWalkerDefault.Walk(treeListener, p.Prog())
+
+	if len(errListener.Errors) > 0 {
+		return 0, errListener.Errors[0]
+	}
 
 	return treeListener.pop(), nil
 }

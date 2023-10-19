@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"calculator/comp"
+	"calculator/calc"
 )
 
 // simple calculator
@@ -32,7 +32,7 @@ func prompt(scanner *bufio.Scanner) (string, error) {
 }
 
 func compute(in string) (string, error) {
-	out, err := comp.Eval(in)
+	out, err := calc.Eval(in)
 	if err != nil {
 		return "", err
 	}

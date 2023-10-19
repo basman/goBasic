@@ -19,6 +19,7 @@ func TestEval(t *testing.T) {
 		{"1+2*3", "7"},
 		{"1+3/2", "2.5"},
 		{"1+ (2+1)/3", "2"},
+		{"bin(6)", "110"},
 	}
 
 	for i, tt := range tbl {

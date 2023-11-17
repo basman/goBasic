@@ -150,14 +150,32 @@ func (r *Rocket) GetMotion() Motion {
 func (r *Rocket) Run(motion chan Motion, valve chan float64) chan struct{} {
 	done := make(chan struct{})
 	go func() {
-		r.Tick()
-		r.sendMotion(motion)
+		r.sendMotion(motion, time.Microsecond*10)
+		initialValveSetting := <-valve
+		r.engine.Ignite(initialValveSetting)
+		r.startTime = time.Now()
 		for !r.HasLanded() && !r.HasCrashed() && r.IsAlive() {
-			time.Sleep(time.Duration(TimeTickMs) * time.Millisecond)
+			// compute adaptive wait time, accounting for time slew caused by previous ticks
+			nextTickTime := r.startTime.Add(time.Duration(float64(r.tickSerial+1)*TimeTickMs) * time.Millisecond)
 
-			r.peekValveSetting(valve)
-			r.Tick()
-			r.sendMotion(motion)
+			if time.Now().After(nextTickTime) {
+				panic(fmt.Sprintf("invalid wait time in Rocket.Run(): negative waitTime %v", time.Now().Sub(nextTickTime)))
+			}
+			waitTime := nextTickTime.Sub(time.Now())
+			if float64(waitTime.Milliseconds()) > TimeTickMs*2 {
+				panic(fmt.Sprintf("invalid wait time in Rocket.Run(): exceeds TimeTickMs*2 (%v): %v", TimeTickMs*2, waitTime))
+			}
+
+			time.Sleep(waitTime)
+
+			/* Maximum wait time for signals is a tenth of a time tick.
+			Note the engine control algorithm has far more time than that to make up its mind about the valve setting,
+			as the sleep in the previous line is almost as long as a full timeTickMs.
+			*/
+			maxWait := time.Duration(float64(time.Millisecond) * TimeTickMs / 10)
+			r.peekValveSetting(valve, maxWait)
+			r.Tick() // update physical system state, i.e. move the rocket
+			r.sendMotion(motion, maxWait)
 		}
 
 		done <- struct{}{}
@@ -168,8 +186,8 @@ func (r *Rocket) Run(motion chan Motion, valve chan float64) chan struct{} {
 	return done
 }
 
-// peekValveSetting performs an unblocking read, making sure to return immediately if there is no value available
-func (r *Rocket) peekValveSetting(valve chan float64) error {
+// peekValveSetting performs an unblocking read, making sure to return before waitTime has elapsed if there is no value available
+func (r *Rocket) peekValveSetting(valve chan float64, waitTimeSec time.Duration) error {
 	select {
 	case v, ok := <-valve:
 		if !ok {
@@ -179,21 +197,21 @@ func (r *Rocket) peekValveSetting(valve chan float64) error {
 		}
 		err := r.UpdateThrottle(v)
 		return err
-	default:
+	case <-time.After(waitTimeSec):
 		err := fmt.Errorf("(tick #%v) engine control failed to provide throttle setting in time. Moving on.", r.tickSerial)
 		log.Printf("WARNING: %v\n", err)
 		return err // don't wait for when value becomes available
 	}
 }
 
-// sendMotion performs an unblocking write, making sure to return VERY soon if noone is reading on the other end
-func (r *Rocket) sendMotion(motion chan Motion) error {
+// sendMotion performs an unblocking write, making sure to return before waitTime has elapsed if noone is reading on the other end
+func (r *Rocket) sendMotion(motion chan Motion, waitTime time.Duration) error {
 	m := r.GetMotion()
 	fmt.Printf("INFO: %v\n", m)
 	select {
 	case motion <- m:
 		return nil
-	case <-time.After(time.Duration(int(controlWaitLimitMs*1000)) * time.Microsecond):
+	case <-time.After(waitTime):
 		err := fmt.Errorf("(tick #%v) engine control failed to consume motion tick in time. Moving on.\n", m.TickSerial)
 		log.Printf("WARNING: %v\n", err)
 		return err

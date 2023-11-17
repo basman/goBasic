@@ -13,5 +13,6 @@ type Motion struct {
 }
 
 func (m Motion) String() string {
-	return fmt.Sprintf("#%v %.6f [%.3fm %.3fm/s %.3fm/s2 %.3fkg]", m.TickSerial, m.Timestamp, m.Altitude, m.Velocity, m.Acceleration, m.Fuel)
+	return fmt.Sprintf("#%v %.6f [%.3fm %.3fm/s %.3fm/s2 %.3fkg]",
+		m.TickSerial, m.Timestamp, m.Altitude, m.Velocity, m.Acceleration, m.Fuel)
 }

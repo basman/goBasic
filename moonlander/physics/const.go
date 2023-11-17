@@ -5,7 +5,7 @@ Physical and simulation constants
 */
 
 // TimeTickMs defines the interval of simulation updates
-const TimeTickMs = float64(1000)
+const TimeTickMs = float64(50)
 
 // MoonGravity defines the effective simulated gravity in m/s^2
 const MoonGravity = float64(9.81) / 16

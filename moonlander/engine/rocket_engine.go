@@ -1,6 +1,9 @@
 package engine
 
-import "errors"
+import (
+	"errors"
+	"log"
+)
 
 /*
 Simulates a vertical rocket engine.
@@ -26,6 +29,8 @@ func (e *Engine) Ignite(thrustValvePercentage float64) error {
 
 	e.isShutdown = false
 	e.thrustValve = thrustValvePercentage
+
+	log.Println("INFO: engine has been ignited")
 
 	return nil
 }

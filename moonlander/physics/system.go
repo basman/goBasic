@@ -173,9 +173,18 @@ func (r *Rocket) Run(motion chan Motion, valve chan float64) chan struct{} {
 			as the sleep in the previous line is almost as long as a full timeTickMs.
 			*/
 			maxWait := time.Duration(float64(time.Millisecond) * TimeTickMs / 10)
-			r.peekValveSetting(valve, maxWait)
-			r.Tick() // update physical system state, i.e. move the rocket
-			r.sendMotion(motion, maxWait)
+			err := r.peekValveSetting(valve, maxWait)
+			if err != nil {
+				log.Fatal(err)
+			}
+			err = r.Tick() // update physical system state, i.e. move the rocket
+			if err != nil {
+				log.Fatal(err)
+			}
+			err = r.sendMotion(motion, maxWait)
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 
 		done <- struct{}{}
@@ -193,14 +202,17 @@ func (r *Rocket) peekValveSetting(valve chan float64, waitTimeSec time.Duration)
 		if !ok {
 			err := fmt.Errorf("(tick #%v) peekValveSetting() tried reading from a closed channel. Moving on.", r.tickSerial)
 			log.Printf("WARNING: %v\n", err)
-			return err
+			return nil
+		}
+		if v < 0 {
+			return fmt.Errorf("received negative throttle setting from controller: %v", v)
 		}
 		err := r.UpdateThrottle(v)
 		return err
 	case <-time.After(waitTimeSec):
 		err := fmt.Errorf("(tick #%v) engine control failed to provide throttle setting in time. Moving on.", r.tickSerial)
 		log.Printf("WARNING: %v\n", err)
-		return err // don't wait for when value becomes available
+		return nil // don't wait for when value becomes available; do not abort
 	}
 }
 

@@ -150,10 +150,10 @@ func (r *Rocket) GetMotion() Motion {
 func (r *Rocket) Run(motion chan Motion, valve chan float64) chan struct{} {
 	done := make(chan struct{})
 	go func() {
+		r.startTime = time.Now()
 		r.sendMotion(motion, time.Microsecond*10)
 		initialValveSetting := <-valve
 		r.engine.Ignite(initialValveSetting)
-		r.startTime = time.Now()
 		for !r.HasLanded() && !r.HasCrashed() && r.IsAlive() {
 			// compute adaptive wait time, accounting for time slew caused by previous ticks
 			nextTickTime := r.startTime.Add(time.Duration(float64(r.tickSerial+1)*TimeTickMs) * time.Millisecond)

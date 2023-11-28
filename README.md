@@ -11,6 +11,7 @@ A collection of entry level go programming exercises.
 ## Medium
 - runningTotal
 - numberGuessing
+- numberGuessingBot
 - randomMessage
 
 ## Hard

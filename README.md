@@ -15,5 +15,6 @@ A collection of entry level go programming exercises.
 - randomMessage
 
 ## Hard
+- mazeRunner
 - calc
 - moonlander
